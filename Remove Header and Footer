@@ -1,0 +1,17 @@
+#from pyspark.context import SparkContext
+from pyspark.sql import functions as F
+from pyspark.sql import Window
+from pyspark.sql.types import StringType
+from pyspark.sql.types import StructType
+from pyspark.sql.types import StructField
+#import boto3
+#s3 = boto3.resource('s3')
+df = spark.read.option("header",False).option("delimiter",";").csv("s3://bpcrm-dev-datafiles-raw/System_Integration_Dev/bpcis-datafiles-raw/DE/account_cs/20201004/").schema(schema)
+#df.show()
+df_1 = df.withColumn( "index", F.row_number().over(Window.orderBy(F.monotonically_increasing_id()))-1)
+df_2 = df_1.count()-1
+print(df_2)
+#df_1.show()
+df_3 = df_1.filter(F.col('index') != '0')
+df_4 =df_3.filter(F.col('index') != df_2).drop('index')
+df_4.show()
