@@ -1,0 +1,54 @@
+import xml.etree.ElementTree as ET
+import pandas as pd
+import boto3
+from io import StringIO
+import pyspark
+from pyspark.sql import SparkSession
+
+
+spark = SparkSession.builder.appName('sparkdf').getOrCreate()
+
+
+bucket = "bpcrm-dev-datafiles-raw"
+s3 = boto3.resource('s3')
+bucket_name_raw = s3.Bucket(bucket)
+input_path = "System_Integration_Dev/temp/dev_test/epos_cost/"
+#file_str = StringIO()
+for object_summary in bucket_name_raw.objects.filter(Prefix=input_path):
+    print("Inside_for",object_summary.key)
+    print("Inside_for",object_summary.bucket_name)
+    if '.xml' in object_summary.key:
+        #print("Inside_if")
+        file = object_summary.key
+        #print("xml_file_name" +file)
+        s3 = boto3.resource('s3')
+        obj = s3.Object(bucket_name_raw.name, file)
+        body = obj.get()['Body'].read().decode("utf-8")
+        print(obj)
+        #tree = ET.parse(input_path)
+        root = ET.fromstring(str(body))
+        #it = ET.iterparse(StringIO(body))
+        #root = tree.getroot()
+        shops_items = []
+        all_shops_items = []
+        for ashop in root.iter('Item'):
+            ItemInternalID = ashop.attrib.get('ItemInternalID')
+            ItemExternalID = ashop.attrib.get('ItemExternalID')
+            for anitem in ashop.iter('RMI'):
+                rmiID = anitem.attrib.get('rmiID')
+                rmiExternalID = anitem.attrib.get('rmiExternalID')
+                uomQty = anitem.attrib.get('uomQty')
+                LastActivityCost = anitem.attrib.get('LastActivityCost')
+                lastmodifieddate = anitem.attrib.get('lastmodifieddate')
+                shops_items = [ItemInternalID,ItemExternalID,rmiID,rmiExternalID,uomQty,LastActivityCost,lastmodifieddate]
+                all_shops_items.append(shops_items)
+       
+        df = pd.DataFrame(all_shops_items,columns=['ItemInternalID','ItemExternalID','rmiID','rmiExternalID','uomQty','LastActivityCost','lastmodifieddate'])
+        print('JV')
+        #csv_buffer = StringIO()
+        #df.to_csv(csv_buffer)
+        #s3_resource = boto3.resource('s3')
+        #s3_resource.Object(bucket, 'df.csv').put(Body=csv_buffer.getvalue())
+        #with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+            #print(df)
+#print(df)
