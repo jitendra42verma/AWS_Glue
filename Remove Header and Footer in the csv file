@@ -6,7 +6,7 @@ from pyspark.sql.types import StructType
 from pyspark.sql.types import StructField
 #import boto3
 #s3 = boto3.resource('s3')
-df = spark.read.option("header",False).option("delimiter",";").csv("s3://bpcrm-dev-datafiles-raw/System_Integration_Dev/bpcis-datafiles-raw/DE/account_cs/20201004/").schema(schema)
+df = spark.read.option("header",False).option("delimiter",";").csv("s3://bpcrm-dev-datafiles-raw/System_Integration_Dev/bpcis-datafiles-raw/DE/account_cs/20201004/")
 #df.show()
 df_1 = df.withColumn( "index", F.row_number().over(Window.orderBy(F.monotonically_increasing_id()))-1)
 df_2 = df_1.count()-1
